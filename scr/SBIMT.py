@@ -3,7 +3,7 @@
 
 '''This software implements the segment-based methodology described by Domingo et al. (2016).
 
-On using this software, please cite the following paper: 
+On using this software, please cite the following paper:
 
   Domingo, M., Peris, Á., and Casacuberta, F. (2016). Interactive-predictive translation
 based on multiple word-segments. In Proceedings of the Annual Meeting of
@@ -25,7 +25,7 @@ __version__ = "1.0"
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
-# limitations under the license. 
+# limitations under the license.
 
 import sys, bisect, subprocess, pty, os, operator
 from random import shuffle
@@ -36,12 +36,12 @@ from random import shuffle
 
 class Phrase:
     """
-    This class stores phrases information (mainly, sources and translations). 
-    It also contains a flag to know if a phrase is contained in a segment (validated) and 
-    a pointer to the phrase in which the segment is stored. Phrases data structures 
+    This class stores phrases information (mainly, sources and translations).
+    It also contains a flag to know if a phrase is contained in a segment (validated) and
+    a pointer to the phrase in which the segment is stored. Phrases data structures
     are ordered according to source.
     """
-    
+
     def __init__(self, src):
         """
         This method initializes a new Phrase. The method receives the source to which
@@ -51,7 +51,7 @@ class Phrase:
         self.translation = ''
         self.segment_position = None
         self.validated = False
-        
+
     def addTranslation(self, trans):
         """
         This method ads more translation to the current translation of the phrase.
@@ -60,7 +60,7 @@ class Phrase:
         if self.translation != '':
             self.translation += ' '
         self.translation += trans
-        
+
     def addSource(self, src):
         """
         This method ads a source to the list of sources contained in the phrase.
@@ -68,7 +68,7 @@ class Phrase:
         """
         if src not in self.sources:
             bisect.insort(self.sources, src)
-            
+
 ########################################################################################
 ###############################   END Phrase   #########################################
 ########################################################################################
@@ -87,17 +87,20 @@ class SBIMT:
     def __init__(self, moses_ini, HMM_alignments, HMM_probability = 0.0, CM_threshold = 0.0, max_phrase_size = 20):
         """
         This method initializes a new segment-based IMT session. The method receives the path
-        containing the Moses initialization file, the path to a file containing HMM alignments 
+        containing the Moses initialization file, the path to a file containing HMM alignments
         between source and target, a threshold of the probability with which a source and a new
-        target should be aligned (default: 0.0), a threshold for the confidence the system have 
+        target should be aligned (default: 0.0), a threshold for the confidence the system have
         for a certaing translation to be correct (default: 0.0) and the maximum size of a phrase
         (default: 20).
         """
 
         self.ensureMosesVariableDefined()
-        self.master, self.slave = pty.openpty()
-        self.MT_system = subprocess.Popen('$MOSES/bin/moses -xml-input exclusive -f ' + moses_ini + ' -print-alignment-info 2> /dev/null', shell=True, stdin=subprocess.PIPE, stdout=self.slave)
-        self.MT_system_out = os.fdopen(self.master)
+        self.moses = subprocess.Popen('$MOSES/bin/moses -xml-input '
+                                      + 'exclusive -f ' + moses_ini
+                                      + ' -print-alignment-info 2> /dev/null',
+                                      shell=True, stdin=subprocess.PIPE,
+                                      stdout=subprocess.PIPE, bufsize=1,
+                                      universal_newlines=True)
 
         self.loadAlignments(HMM_alignments)
         self.alignment_probability = HMM_probability
@@ -154,9 +157,9 @@ class SBIMT:
     def getValidatedTranslation(self):
         """
         This method returns the translation validated by the user (the current
-        translation without the words the user has removed). 
+        translation without the words the user has removed).
         """
-        
+
         target_deleted = [False for trg in self.target]
         for words in self.deleted_words:
             for word in words:
@@ -214,19 +217,19 @@ class SBIMT:
             for j in range(sgmnts_size - 1, -1, -1):
                 LCS[i][j] = LCS[i + 1][j + 1]
                 LCS_path[i][j] = LCS_path[i + 1][j + 1]
-            
+
                 if trgs[i] == sgmnts[j]:
                     LCS[i][j] += ' ' + trgs[i]
                     LCS_path[i][j] += ' ' + trgs_index[i]
-                
+
                 if len(LCS[i][j + 1]) >= len(LCS[i][j]):
                     LCS[i][j] = LCS[i][j + 1]
                     LCS_path[i][j] = LCS_path[i][j + 1]
-                
+
                 if len(LCS[i + 1][j]) >= len(LCS[i][j]):
                     LCS[i][j] = LCS[i + 1][j]
                     LCS_path[i][j] = LCS_path[i + 1][j]
-                
+
         return [int(n) for n in list(reversed(LCS_path[0][0].split()))]
 
     def ensureMosesVariableDefined(self):
@@ -244,7 +247,7 @@ class SBIMT:
         and target. The method receives the path to a file containing the alignments.
         """
         self.alignments = {}
-    
+
         for lines in open(alignments_path):
             try:
                 self.alignments[lines.split()[0]]
@@ -272,7 +275,7 @@ class SBIMT:
         self.target = []
         self.target_size = 0
         self.target_to_phrase = []
-        
+
         self.segments = []
         self.segments_string = []
         self.segments_size = 0
@@ -287,8 +290,8 @@ class SBIMT:
         """
 
         #New hypothesis.
-        self.MT_system.stdin.write(self.xml + '\n')
-        hyp = self.MT_system_out.readline()
+        self.moses.stdin.write((self.xml + '\n'))
+        hyp = self.moses.stdout.readline().strip()
 
         #Update data structures.
         self.deleted_words = []
@@ -306,7 +309,7 @@ class SBIMT:
             if self.artificial_source_at_beggining and not self.phrases[0].validated:
                 #Exception for using prefix-based as a particula case of segment-based.
                 src -= 1
-        
+
             if not self.phrases[src].validated:
                 self.target_to_phrase[trg].append(src)
 
@@ -328,13 +331,13 @@ class SBIMT:
 
     def segmentValidation(self, segmnts):
         """
-        This method updates the data structures according to the list of segments validated 
+        This method updates the data structures according to the list of segments validated
         by the user. The method receives a list of list with the position of the targets
         that conform the segments.
         """
 
         for n in range(len(segmnts)):
-            
+
             #Search for the phrase in which the segment is going to be stored.
             phrase_index = self.source_size + self.artificial_sources
             for trg in segmnts[n]:
@@ -392,7 +395,7 @@ class SBIMT:
 
     def mergeSegments(self, left_segment, right_segment):
         """
-        This method updates the data structures to merge two consecutives segments 
+        This method updates the data structures to merge two consecutives segments
         into one. Words between those segments are stored in a list for logging purposes.
         Them method receives the position in the segments list of both segments to merge.
         """
@@ -427,7 +430,7 @@ class SBIMT:
         right_phrase = self.phrases[self.target_to_phrase[self.segments[right_segment][0]][0]].segment_position
         left_phrase = self.phrases[self.target_to_phrase[self.segments[left_segment][0]][0]].segment_position
 
-        #If one of the segments contains an artificial source, it is treated differently (to remove the artificial source): 
+        #If one of the segments contains an artificial source, it is treated differently (to remove the artificial source):
         if self.artificial_sources > 0 and (right_phrase >= self.source_size or left_phrase >= self.source_size):
             #If the articial source is in the right segment, the segments are merged into the left phrase and
             #the right phrase is deleted (target_to_phrase list must be updated).
@@ -444,7 +447,7 @@ class SBIMT:
                     self.phrases[source].segment_position = source
 
             #If the articial source is in the left segment, the segments are merged into the right phrase and
-            #the left phrase is deleted (target_to_phrase list must be updated).                    
+            #the left phrase is deleted (target_to_phrase list must be updated).
             else:
                 self.phrases[right_phrase].translation = self.phrases[left_phrase].translation + ' ' + self.phrases[right_phrase].translation
                 del self.phrases[left_phrase]
@@ -467,7 +470,7 @@ class SBIMT:
             for trg in range(self.target_size): #target_to_phrase is updated so that all targets pointing to left phrase point now to right phrase.
                 if self.target_to_phrase[trg] != [] and self.target_to_phrase[trg][0] == left_phrase:
                     self.target_to_phrase[trg][0] = right_phrase
-        
+
         else:
             for src in self.phrases[right_phrase].sources:
                 self.phrases[left_phrase].addSource(src)
@@ -530,7 +533,7 @@ class SBIMT:
         elif self.target_to_phrase[wrong_word] == [] or sum([1 for src in self.target_to_phrase[wrong_word] if not self.phrases[src].validated]) > 0: #The user is replacing a word.
             #(Nothing special to consider.)
             trg = wrong_word
-            
+
         else: #The user is inserting a word between segments.
             #Target data structures are increased in one element at the position of the target word corrected.
             trg = wrong_word
@@ -543,7 +546,7 @@ class SBIMT:
             self.target_size += 1
 
         #The validated phrase into which the new segment (composed of the  word correction) belongs is
-        #conformed by all the source words aligned with the segment. 
+        #conformed by all the source words aligned with the segment.
         srcs = self.getSources(corrected_word)
         src = None
         for source in srcs: #The phrase of one of those words will represent the segment.
@@ -577,19 +580,19 @@ class SBIMT:
             self.segments.append([trg])
             self.segments_string.append([corrected_word])
             self.segments_size += 1
-            
+
         else:#At the corresponding position, otherwise.
             for index in range(self.segments_size + 1):
                 if index == self.segments_size:
                     self.segments.insert(index, [trg])
                     self.segments_string.insert(index, [corrected_word])
                     self.segments_size += 1
-                    break            
+                    break
                 if self.segments[index][0] > trg:
                     self.segments.insert(index, [trg])
                     self.segments_string.insert(index, [corrected_word])
                     self.segments_size += 1
-                    break            
+                    break
         #Finally, word strokes and mouse actions are computed (1 stroke and 1 action per correction).
         self.current_word_strokes += 1
         self.current_mouse_actions += 1
@@ -601,7 +604,7 @@ class SBIMT:
         """
         if target == '':
             return '<x translation=" ">' + source + '</x><wall/>'
-        
+
         return '<x translation="' + target + '">' + source + '</x><wall/>'
 
     def generateXML(self):
@@ -617,7 +620,7 @@ class SBIMT:
         #more word in between (in that case, a new tag with an "empty" translation would be created).
         #No matter into which phrase they belong, phrases with an "empty" translation must be grouped
         #into as few tags as possible.
-        
+
         segment_index = 0
         pending_phrases = []
         pending_phrases_size = 0
@@ -709,7 +712,7 @@ class SBIMT:
             segment_translation = ''
         else:
             segment_translation = ' '.join(self.segments_string[0])
-            
+
         pending_phrases = []
         pending_phrases_size = 0
         empty_translation = True
@@ -750,7 +753,7 @@ class SBIMT:
 
     def endOfSentence(self):
         """
-        This method accounts for the user indicating that the current validated segments 
+        This method accounts for the user indicating that the current validated segments
         conform their desired translation.
         """
 
@@ -783,7 +786,7 @@ class SBIMT:
     def mostUnlikelyTarget(self):
         """
         This method returns the word which the system has the least confidence on having
-        translated correctly. For simplicity's sake, only the words next to segments 
+        translated correctly. For simplicity's sake, only the words next to segments
         (either before or after a segment) are considered. The first and last words
         from the hypothesis are also considered. If all words are validated, the method
         returns a 'None' value.
@@ -803,12 +806,12 @@ class SBIMT:
         for words in self.deleted_words:
             for word in words:
                 target_deleted[word] = True
-                
+
         for n in range(self.target_size):
             #Ignore deleted words.
             if target_deleted[n]:
                 continue
-            
+
             #Beginning and ending of the hypothesis.
             if (n == 0 or n == self.target_size - 1) and target_in_segments[n] == None:
                 p = 0
@@ -866,7 +869,7 @@ class SBIMT:
 
     def mostLikelySegments(self):
         """
-        This method returns a list with those segments which the system considers that have 
+        This method returns a list with those segments which the system considers that have
         a translation confidence greater than a threshold.
         """
 
@@ -902,7 +905,7 @@ class SBIMT:
 
         #Return the list of segments.
         return segments
-                    
+
 
 
 ########################################################################################
