@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 '''Taking a test to translate, its reference file, the Moses init file of a trained
-system and an HMM alignment model; this software simulates a user working on a 
+system and an HMM alignment model; this software simulates a user working on a
 segment-based IMT framework.'''
 
 __author__ = "Miguel Domingo"
@@ -28,7 +28,7 @@ import SBIMT as SB
 
 ########################################################################################
 ###############################   CLASS Simulation   ###################################
-########################################################################################    
+########################################################################################
 
 class Simulation:
     """
@@ -97,7 +97,7 @@ class Simulation:
             #(For a given word, it is considered to be errouneus either if there exists a
             #previous pending word--a word that should have been validated before that
             #one--or or a future pending word that is not on the list of new validated words.)
-            erroneus_segment = False 
+            erroneus_segment = False
             for index in range(reference_index[n] - 1, -1, -1):
                 if pending_references[index]:
                     erroneus_segment = True
@@ -110,7 +110,7 @@ class Simulation:
                 continue
 
             #If no error is detected, add the word to the new validated segments:
-                
+
             if current_segments == []: #If the list of current new segment is empty:
                 #Add the word as a beggining of a new segment.
                 current_segments.append(target_index[n])
@@ -126,7 +126,7 @@ class Simulation:
                 current_segments.append(target_index[n])
                 current_segments_reference.append(reference_index[n])
                 self.reference_in_segment[reference_index[n]] = current_segment_index + 1
-                
+
             else: #Otherwise:
                 #Add the current new segment to the new segment lists and create a current new segment with the word
                 #as a beggining of the segment.
@@ -157,12 +157,12 @@ class Simulation:
 
     def commonWords(self, hyp):
         """
-        This function computes the longest common subsequence between two sequences and returns a 
+        This function computes the longest common subsequence between two sequences and returns a
         vector with the indexes of the position of the subsequence in the first sequence, and a
         vector with the indexes of the position of the subsequence in the second sequence. The first
         sequence corresponds to the current hypothesis and the second corresponds to the reference.
         """
-        
+
         m = len(hyp)
         n = self.reference_size
 
@@ -170,32 +170,32 @@ class Simulation:
         x_path = [str(tr) for tr in range(m)]
         y_list = self.reference
         y_path = [str(ref) for ref in range(n)]
-        
+
         LCS = [['' for i in range(n + 1)] for j in range(m + 1)]
         LCS_xpath = [['' for i in range(n + 1)] for j in range(m + 1)]
         LCS_ypath = [['' for i in range(n + 1)] for j in range(m + 1)]
-    
+
         for i in range(m - 1, -1, -1):
             for j in range(n - 1, -1, -1):
                 LCS[i][j] = LCS[i + 1][j + 1]
                 LCS_xpath[i][j] = LCS_xpath[i + 1][j + 1]
                 LCS_ypath[i][j] = LCS_ypath[i + 1][j + 1]
-            
+
                 if x_list[i] == y_list[j]:
                     LCS[i][j] += ' ' + x_list[i]
                     LCS_xpath[i][j] += ' ' + x_path[i]
                     LCS_ypath[i][j] += ' ' + y_path[j]
-                
+
                 if len(LCS[i][j + 1]) > len(LCS[i][j]):
                     LCS[i][j] = LCS[i][j + 1]
                     LCS_xpath[i][j] = LCS_xpath[i][j + 1]
                     LCS_ypath[i][j] = LCS_ypath[i][j + 1]
-                
+
                 if len(LCS[i + 1][j]) > len(LCS[i][j]):
                     LCS[i][j] = LCS[i + 1][j]
                     LCS_xpath[i][j] = LCS_xpath[i + 1][j]
                     LCS_ypath[i][j] = LCS_ypath[i + 1][j]
-                
+
         return [int(index) for index in list(reversed(LCS_xpath[0][0].split()))], [int(index) for index in list(reversed(LCS_ypath[0][0].split()))]
 
     def mergeSegments(self, session):
@@ -218,11 +218,11 @@ class Simulation:
 
         #Word by word, check if a word and its previous word belong to two different segments.
         for n in range(1, self.reference_size):
-            
+
             if self.reference_in_segment[n] == None:
                 break
                 continue
-            
+
             #If they do:
             if self.reference_in_segment[n - 1] != None and self.reference_in_segment[n - 1] != self.reference_in_segment[n]:
                 merged = True
@@ -234,11 +234,11 @@ class Simulation:
                     if self.reference_in_segment[index] != None and self.reference_in_segment[index] >= old_index:
                         self.reference_in_segment[index] -= 1
         return merged
-        
+
     def wordCorrection(self, session):
         """
         This method simulates a user correcting a word. Without loss of generality
-        and for simplicity's sake, the first word corrected is the leftmost wrong 
+        and for simplicity's sake, the first word corrected is the leftmost wrong
         word of the hypothesis. The method receives an object of the SBIMT class
         that contains the current session.
         """
@@ -286,7 +286,7 @@ class Simulation:
 
 ########################################################################################
 ###############################   END Simulation   #####################################
-########################################################################################    
+########################################################################################
 
 def usage():
     """
@@ -315,23 +315,23 @@ def getArguments():
     #Loop through the arguments.
     n = 1
     while n < len(sys.argv):
-        
+
         if sys.argv[n] == '-s':
             src = sys.argv[n + 1]
             n += 2
-            
+
         elif sys.argv[n] == '-r':
             ref = sys.argv[n + 1]
             n += 2
-            
+
         elif sys.argv[n] == '-m':
             moses_ini = sys.argv[n + 1]
             n += 2
-            
+
         elif sys.argv[n] == '-v':
             verbose = True
             n += 1
-            
+
         elif sys.argv[n] == '-xml':
             XML = True
             verbose = True
@@ -376,7 +376,7 @@ if __name__ == "__main__":
     """
     Start of the simulation.
     """
-    
+
     #Check arguments.
     src, ref, moses_ini, verbose, XML, alignments_path, prob_threshold = getArguments()
 
@@ -407,17 +407,17 @@ if __name__ == "__main__":
         validated_translation = False
 
         if verbose:
-            print 'SOURCE: ' + source.strip()
-            print 'REFERENCE: ' + ' '.join(reference)
+            print('SOURCE: ' + source.strip())
+            print('REFERENCE: ' + ' '.join(reference))
 
         #Iterative process.
         while not validated_translation:
 
             #Load new hypothesis.
             session.newHypothesis()
-            
+
             if verbose:
-                print 'TRANSLATION:', session.getTranslation()
+                print('TRANSLATION:', session.getTranslation())
 
             #Check if new hypothesis is the desired translation.
             if session.getTranslation() == ' '.join(reference):
@@ -437,36 +437,36 @@ if __name__ == "__main__":
             if new_word == '':
                 session.validateTranslation()
                 if verbose:
-                    print ''
-                    print ''
-                    print 'CORRECTED WORD: '
-                    print 'WORD SEGMENTS:', session.getWordSegments()
-                    print 'DELETED WORDS:', session.getDeletedWords()
-                    print ''
+                    print('')
+                    print('')
+                    print('CORRECTED WORD: ')
+                    print('WORD SEGMENTS:', session.getWordSegments())
+                    print('DELETED WORDS:', session.getDeletedWords())
+                    print('')
                 break
 
             #XML Generation.
             session.generateXML()
-                
+
             if verbose:
-                print ''
-                print ''
-                print 'CORRECTED WORD:',  new_word
-                print 'WORD SEGMENTS:', session.getWordSegments()
-                print 'DELETED WORDS:', session.getDeletedWords()
-                print ''
+                print('')
+                print('')
+                print('CORRECTED WORD:',  new_word)
+                print('WORD SEGMENTS:', session.getWordSegments())
+                print('DELETED WORDS:', session.getDeletedWords())
+                print('')
                 if XML:
-                    print 'XML:', session.getXML()
+                    print('XML:', session.getXML())
 
         if verbose:
-            print ''
-            print 'Word Strokes: ', session.getWordStrokes()
-            print 'Mouse Actions:', session.getMouseActions()
-            
-            print "-----------------------------------------"
-            print ''
+            print('')
+            print('Word Strokes: ', session.getWordStrokes())
+            print('Mouse Actions:', session.getMouseActions())
+
+            print("-----------------------------------------")
+            print('')
 
     #Show metrics.
-    print 'WSR:', "{0:.1f}".format(session.getWSR())
-    print 'MAR:', "{0:.1f}".format(session.getMAR())
-    print 'WDR:', "{0:.1f}".format(session.getWDR())
+    print('WSR:', "{0:.1f}".format(session.getWSR()))
+    print('MAR:', "{0:.1f}".format(session.getMAR()))
+    print('WDR:', "{0:.1f}".format(session.getWDR()))
