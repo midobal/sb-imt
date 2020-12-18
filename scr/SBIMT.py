@@ -115,6 +115,8 @@ class SBIMT:
         self.words = 0
         self.characters = 0
 
+        self.empty_token = '__EMPTY__'
+
     def getSegments(self):
         """
         This method returns a list with all the validated segments.
@@ -291,7 +293,7 @@ class SBIMT:
 
         #New hypothesis.
         self.moses.stdin.write((self.xml + '\n'))
-        hyp = self.moses.stdout.readline().strip()
+        hyp = self.moses.stdout.readline().strip().replace(self.empty_token, '')
 
         #Update data structures.
         self.deleted_words = []
@@ -603,7 +605,7 @@ class SBIMT:
         part of the tag, and a string containing the source part of the tag.
         """
         if target == '':
-            return '<x translation=" ">' + source + '</x><wall/>'
+            return '<x translation="' + self.empty_token + '">' + source + '</x><wall/>'
 
         return '<x translation="' + target + '">' + source + '</x><wall/>'
 
