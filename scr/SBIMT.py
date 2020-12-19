@@ -782,7 +782,7 @@ class SBIMT:
         #are increased.
         self.word_strokes += self.current_word_strokes
         self.mouse_actions += self.current_mouse_actions
-        self.characters += sum([len(w) for w in ' '.join(self.target).decode('utf-8').split()])
+        self.characters += sum([len(w) for w in ' '.join(self.target).split()])
         self.words += self.target_size
 
     def mostUnlikelyTarget(self):
