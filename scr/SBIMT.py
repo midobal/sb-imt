@@ -293,21 +293,36 @@ class SBIMT:
 
         #New hypothesis.
         self.moses.stdin.write((self.xml + '\n'))
-        hyp = self.moses.stdout.readline().strip().replace(self.empty_token, '')
+        hyp = self.moses.stdout.readline().strip()
 
         #Update data structures.
         self.deleted_words = []
-        self.target = hyp.split('|||')[0].split()
+        self.target = []
+        empty_targets = []
+        position = 0
+        for token in hyp.split('|||')[0].split():
+            if token != self.empty_token:
+                self.target.append(token)
+            else:
+                empty_targets.append(position)
+            position += 1
         self.target_size = len(self.target)
-        alignments = hyp.strip().split('|||')[1].split()
+        alignments = [[int(a.split('-')[0]), int(a.split('-')[1])] for a in
+                      hyp.strip().split('|||')[1].split()]
+        for n in range(len(empty_targets)):
+            tgt = empty_targets[n] - n
+            for m in range(len(alignments)):
+                if alignments[m][1] == tgt:
+                    alignments.pop(m)
+                elif alignments[m][1] > tgt:
+                    alignments[m][1] -= 1
+
+
         old_target_to_phrase = self.target_to_phrase
         self.target_to_phrase = [[] for n in range(self.target_size)]
 
         #Source-target alignments given by Moses.
-        for w in alignments:
-            src = int(w.split('-')[0])
-            trg = int(w.split('-')[1])
-
+        for src, trg in alignments:
             if self.artificial_source_at_beggining and not self.phrases[0].validated:
                 #Exception for using prefix-based as a particula case of segment-based.
                 src -= 1
