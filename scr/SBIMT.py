@@ -29,7 +29,10 @@ __version__ = "1.0"
 # See the License for the specific language governing permissions and
 # limitations under the license.
 
-import sys, bisect, subprocess, pty, os, operator
+import sys
+import bisect
+import subprocess
+import os
 from random import shuffle
 
 ##############################################################################

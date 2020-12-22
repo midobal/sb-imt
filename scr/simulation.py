@@ -23,7 +23,8 @@ __version__ = "1.0"
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys, os
+import sys
+import os
 import SBIMT as SB
 
 ##############################################################################
@@ -65,33 +66,35 @@ class Simulation:
         # inconsistently).
         pending_references = [False for ref in self.reference]
         for n in range(self.reference_size):
-            if self.reference_in_segment[n] != None:
+            if self.reference_in_segment[n] is not None:
                 pending_references[n] = True
 
         # Check new validated segments word by word.
         validated_segments = []
         validated_segments_reference = []
         current_segments = []
-        current_segments_reference = []
+        current_segments_ref = []
         current_segment_index = -1
         old_reference_in_segment = [n for n in self.reference_in_segment]
         for n in range(len(reference_index)):
 
             # If current word belongs to a previous validated segment:
-            if self.reference_in_segment[reference_index[n]] != None:
+            if self.reference_in_segment[reference_index[n]] is not None:
                 # If the corresponding target is not the one that is supposed
                 # to be:
-                if target_index[n] not in segments[old_reference_in_segment[reference_index[n]]]:
+                if target_index[n] not in segments[old_reference_in_segment[
+                        reference_index[n]]]:
                     # Discard the word as an error.
                     continue
                 if current_segments != []:
                     # Store the current saved words as a new validated segment.
                     validated_segments.append(current_segments)
-                    validated_segments_reference.append(current_segments_reference)
+                    validated_segments_reference.append(current_segments_ref)
                     current_segments = []
-                    current_segments_reference = []
+                    current_segments_ref = []
                 # Unmark the word as pending.
-                current_segment_index = self.reference_in_segment[reference_index[n]]
+                current_segment_index = self.reference_in_segment[
+                    reference_index[n]]
                 pending_references[reference_index[n]] = False
                 continue
 
@@ -106,8 +109,10 @@ class Simulation:
                     erroneus_segment = True
                     break
             if not erroneus_segment:
-                for index in range(reference_index[n] + 1, self.reference_size):
-                    if pending_references[index] and index not in reference_index[n + 1:]:
+                for index in range(reference_index[n] + 1,
+                                   self.reference_size):
+                    if (pending_references[index]
+                            and index not in reference_index[n + 1:]):
                         erroneus_segment = True
             if erroneus_segment:  # Discard the word if an error is detected.
                 continue
@@ -118,38 +123,45 @@ class Simulation:
                 # is empty:
                 # Add the word as a beggining of a new segment.
                 current_segments.append(target_index[n])
-                current_segments_reference.append(reference_index[n])
-                self.reference_in_segment[reference_index[n]] = current_segment_index + 1
-                for index in range(reference_index[n] + 1, self.reference_size):
-                    if self.reference_in_segment[index] != None:
+                current_segments_ref.append(reference_index[n])
+                self.reference_in_segment[reference_index[n]] = \
+                    current_segment_index + 1
+                for index in range(reference_index[n] + 1,
+                                   self.reference_size):
+                    if self.reference_in_segment[index] is not None:
                         self.reference_in_segment[index] += 1
 
-            elif target_index[n] == current_segments[-1] + 1 and reference_index[n] == current_segments_reference[-1] + 1:  # Else,
-                # If the word is following one of the current new segment:
+            elif (target_index[n] == current_segments[-1] + 1
+                  and reference_index[n] == current_segments_ref[-1] + 1):
+                # Else, if the word is following one of the current new
+                # segment:
                 # Add the word to the current new segment.
                 current_segments.append(target_index[n])
-                current_segments_reference.append(reference_index[n])
-                self.reference_in_segment[reference_index[n]] = current_segment_index + 1
+                current_segments_ref.append(reference_index[n])
+                self.reference_in_segment[reference_index[n]] = \
+                    current_segment_index + 1
 
             else:  # Otherwise:
                 # Add the current new segment to the new segment lists and
                 # create a current new segment with the word as a beggining
                 # of the segment.
                 validated_segments.append(current_segments)
-                validated_segments_reference.append(current_segments_reference)
+                validated_segments_reference.append(current_segments_ref)
                 current_segments = [target_index[n]]
-                current_segments_reference = [reference_index[n]]
+                current_segments_ref = [reference_index[n]]
                 current_segment_index += 1
-                self.reference_in_segment[reference_index[n]] = current_segment_index + 1
-                for index in range(reference_index[n] + 1, self.reference_size):
-                    if self.reference_in_segment[index] != None:
+                self.reference_in_segment[reference_index[n]] = \
+                    current_segment_index + 1
+                for index in range(reference_index[n] + 1,
+                                   self.reference_size):
+                    if self.reference_in_segment[index] is not None:
                         self.reference_in_segment[index] += 1
 
         # After checking all words, make sure there isn't a current new
         # segment pending to be added to the list.
         if current_segments != []:
             validated_segments.append(current_segments)
-            validated_segments_reference.append(current_segments_reference)
+            validated_segments_reference.append(current_segments_ref)
 
         # Finally, make sure that there are no pending words.
         for n in range(self.reference_size):
@@ -204,7 +216,9 @@ class Simulation:
                     LCS_xpath[i][j] = LCS_xpath[i + 1][j]
                     LCS_ypath[i][j] = LCS_ypath[i + 1][j]
 
-        return [int(index) for index in list(reversed(LCS_xpath[0][0].split()))], [int(index) for index in list(reversed(LCS_ypath[0][0].split()))]
+        return [int(index) for index in list(reversed(
+            LCS_xpath[0][0].split()))], [int(index) for index in list(
+                reversed(LCS_ypath[0][0].split()))]
 
     def mergeSegments(self, session):
         """
@@ -214,7 +228,6 @@ class Simulation:
         """
 
         # Current hypothesis and validated segments.
-        hyp = session.getTranslation().split()
         segments = session.getSegments()
         merged = False
 
@@ -235,14 +248,18 @@ class Simulation:
                 continue
 
             # If they do:
-            if self.reference_in_segment[n - 1] != None and self.reference_in_segment[n - 1] != self.reference_in_segment[n]:
+            if (self.reference_in_segment[n - 1] is not None
+                and self.reference_in_segment[n - 1]
+                    != self.reference_in_segment[n]):
                 merged = True
                 # Merge those segments.
-                session.mergeSegments(self.reference_in_segment [n - 1], self.reference_in_segment[n])
+                session.mergeSegments(self.reference_in_segment[n - 1],
+                                      self.reference_in_segment[n])
                 # Update reference_in_segment list.
                 old_index = self.reference_in_segment[n]
                 for index in range(n, self.reference_size):
-                    if self.reference_in_segment[index] != None and self.reference_in_segment[index] >= old_index:
+                    if (self.reference_in_segment[index] is not None
+                            and self.reference_in_segment[index] >= old_index):
                         self.reference_in_segment[index] -= 1
         return merged
 
@@ -259,31 +276,34 @@ class Simulation:
         segments = session.getSegments()
 
         # If the reference's first word hasn't been validated:
-        if self.reference_in_segment[0] == None:
+        if self.reference_in_segment[0] is None:
             # Correct the hypothesis' first word.
             self.reference_in_segment[0] = 0
             # Update reference_in_segment list (a new segment is going to
             # be added at the beggining).
             for index in range(1, self.reference_size):
-                if self.reference_in_segment[index] != None:
+                if self.reference_in_segment[index] is not None:
                     self.reference_in_segment[index] += 1
             session.wordCorrection(0, self.reference[0])
             return self.reference[0]
 
         # Otherwise, look for the reference's first unvalidated word.
         for n in range(1, self.reference_size):
-            if self.reference_in_segment[n] == None:
+            if self.reference_in_segment[n] is None:
                 # Once located, find the target which should be corrected.
                 # (The target in the hypothesis that follows the segment in
                 # which the previous reference--n - 1--was located.)
-                self.reference_in_segment[n] = self.reference_in_segment[n - 1] + 1
+                self.reference_in_segment[n] = self.reference_in_segment[
+                    n - 1] + 1
                 # Update reference_in_segment (a new segment is going to be
                 # added after the segment in which the previous reference was
                 # located).
                 for index in range(n + 1, self.reference_size):
-                    if self.reference_in_segment[index] != None:
+                    if self.reference_in_segment[index] is not None:
                         self.reference_in_segment[index] += 1
-                session.wordCorrection(segments[self.reference_in_segment[n - 1]][-1] + 1, self.reference[n])
+                session.wordCorrection(segments[
+                    self.reference_in_segment[n - 1]][-1] + 1,
+                                        self.reference[n])
                 return self.reference[n]
 
         # If all word in the reference have already been validated:
@@ -305,7 +325,9 @@ def usage():
     """
     This function shows the usage message.
     """
-    sys.stderr.write('Usage: ' + sys.argv[0] + ' -s source_file -r reference_file -m moses_ini -a alignments [options]\n\n')
+    sys.stderr.write('Usage: ' + sys.argv[0] + ' -s source_file -r '
+                     + 'reference_file -m moses_ini -a alignments '
+                     + '[options]\n\n')
     sys.stderr.write('Options: \n')
     sys.stderr.write('  -h             show this message.\n')
     sys.stderr.write('  -v             verbose mode on.\n')
@@ -363,7 +385,7 @@ def getArguments():
             usage()
 
     # Check that mandatory arguments are present.
-    if src == None or ref == None or moses_ini == None or alignments == None:
+    if src is None or ref is None or moses_ini is None or alignments is None:
         usage()
 
     # Check all paths.
@@ -393,7 +415,8 @@ if __name__ == "__main__":
     """
 
     # Check arguments.
-    src, ref, moses_ini, verbose, XML, alignments_path, prob_threshold = getArguments()
+    src, ref, moses_ini, verbose, XML, alignments_path, prob_threshold = \
+        getArguments()
 
     # Session set-up.
     sys.stderr.write("\x1b[2J\x1b[H")
@@ -414,7 +437,11 @@ if __name__ == "__main__":
 
         # Show progess.
         sys.stderr.write("\x1b[2J\x1b[H")
-        sys.stderr.write('Progress: ' + str(current_sentence) + '/' + str(total_sentences) + ' [' + "{0:.2f}".format(current_sentence / float(total_sentences) * 100) + ' %]\n')
+        sys.stderr.write('Progress: ' + str(current_sentence) + '/'
+                         + str(total_sentences)
+                         + ' [' + "{0:.2f}".format(current_sentence
+                                                   / float(total_sentences)
+                                                   * 100) + ' %]\n')
         current_sentence += 1
 
         # Session initialization.
