@@ -762,7 +762,6 @@ class SBIMT:
                 pending_phrases = []
                 pending_phrases_size = 0
                 segment_translation = ''
-                empty_translation = True
 
             # If the current phrase is a non-validated phrase:
             if not self.phrases[n].validated:
