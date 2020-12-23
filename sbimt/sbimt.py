@@ -1,88 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-'''This software implements the segment-based methodology described by Domingo
- et al. (2016).
-
-On using this software, please cite the following paper:
-
-  Domingo, M., Peris, Á., and Casacuberta, F. (2016). Interactive-predictive
-   translation
-based on multiple word-segments. In Proceedings of the Annual Meeting of
-the European Association for Machine Translation, pages 282–291.'''
-
-__author__ = "Miguel Domingo"
-__copyright__ = "Copyright (C) 2016 PRHLT"
-__license__ = "Apache 2.0"
-__email__ = "midobal@prhlt.upv.es"
-__version__ = "1.0"
-
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the license.
-
 import sys
-import bisect
 import subprocess
 import os
 from random import shuffle
-
-##############################################################################
-###############################   CLASS Phrase   #############################
-##############################################################################
-
-
-class Phrase:
-    """
-    This class stores phrases information (mainly, sources and translations).
-    It also contains a flag to know if a phrase is contained in a segment
-    (validated) and a pointer to the phrase in which the segment is stored.
-    Phrases data structures are ordered according to source.
-    """
-
-    def __init__(self, src):
-        """
-        This method initializes a new Phrase. The method receives the source
-        to which is originally associated.
-        """
-        self.sources = [src]
-        self.translation = ''
-        self.segment_position = None
-        self.validated = False
-
-    def addTranslation(self, trans):
-        """
-        This method ads more translation to the current translation of the
-        phrase. The method receives a string with the new translation.
-        """
-        if self.translation != '':
-            self.translation += ' '
-        self.translation += trans
-
-    def addSource(self, src):
-        """
-        This method ads a source to the list of sources contained in the
-        phrase. The method receives the position of the new source.
-        """
-        if src not in self.sources:
-            bisect.insort(self.sources, src)
-
-##############################################################################
-###############################   END Phrase   ###############################
-##############################################################################
-
-
-##############################################################################
-###############################   CLASS SBIMT   ##############################
-##############################################################################
+from sbimt.phrase import Phrase
 
 
 class SBIMT:
