@@ -39,6 +39,7 @@ from random import shuffle
 ###############################   CLASS Phrase   #############################
 ##############################################################################
 
+
 class Phrase:
     """
     This class stores phrases information (mainly, sources and translations).
@@ -68,8 +69,8 @@ class Phrase:
 
     def addSource(self, src):
         """
-        This method ads a source to the list of sources contained in the phrase.
-        The method receives the position of the new source.
+        This method ads a source to the list of sources contained in the
+        phrase. The method receives the position of the new source.
         """
         if src not in self.sources:
             bisect.insort(self.sources, src)
@@ -89,7 +90,8 @@ class SBIMT:
     This class implements the segment-based IMT methodology.
     """
 
-    def __init__(self, moses_ini, HMM_alignments, HMM_probability = 0.0, CM_threshold = 0.0, max_phrase_size = 20):
+    def __init__(self, moses_ini, HMM_alignments, HMM_probability=0.0,
+                 CM_threshold=0.0, max_phrase_size=20):
         """
         This method initializes a new segment-based IMT session. The method
         receives the path containing the Moses initialization file, the path
@@ -135,7 +137,8 @@ class SBIMT:
         It is intended for logging purposes.
         """
 
-        return '    '.join([' '.join(segment) for segment in self.segments_string])
+        return '    '.join([' '.join(segment)
+                            for segment in self.segments_string])
 
     def getDeletedWords(self):
         """
@@ -171,7 +174,8 @@ class SBIMT:
         for words in self.deleted_words:
             for word in words:
                 target_deleted[word] = True
-        return ' '.join([self.target[n] for n in range(self.target_size) if not target_deleted[n]])
+        return ' '.join([self.target[n] for n in range(self.target_size)
+                         if not target_deleted[n]])
 
     def getWordStrokes(self):
         """
@@ -213,12 +217,16 @@ class SBIMT:
         sgmnts = [w for s in self.segments_string for w in s]
         sgmnts_size = len(sgmnts)
 
-        trgs = [self.target[n] for n in range(self.target_size) if self.target_to_phrase[n] == []]
-        trgs_index = [str(n) for n in range(self.target_size) if self.target_to_phrase[n] == []]
+        trgs = [self.target[n] for n in range(self.target_size)
+                if self.target_to_phrase[n] == []]
+        trgs_index = [str(n) for n in range(self.target_size)
+                      if self.target_to_phrase[n] == []]
         trgs_size = len(trgs)
 
-        LCS = [['' for i in range(sgmnts_size + 1)] for j in range(trgs_size + 1)]
-        LCS_path = [['' for i in range(sgmnts_size + 1)] for j in range(trgs_size + 1)]
+        LCS = [['' for i in range(sgmnts_size + 1)]
+               for j in range(trgs_size + 1)]
+        LCS_path = [['' for i in range(sgmnts_size + 1)]
+                    for j in range(trgs_size + 1)]
 
         for i in range(trgs_size - 1, -1, -1):
             for j in range(sgmnts_size - 1, -1, -1):
@@ -245,7 +253,9 @@ class SBIMT:
         aborts the execution if there is not.
         """
         if os.getenv('MOSES') == '':
-            sys.stderr.write('Error loading Moses. Please define a variable "$MOSES" pointing to Moses path (e.g., export MOSES=/opt/moses)\n')
+            sys.stderr.write('Error loading Moses. Please define a variable '
+                             + '"$MOSES" pointing to Moses path (e.g., '
+                             + 'export MOSES=/opt/moses)\n')
             sys.exit(-1)
 
     def loadAlignments(self, alignments_path):
@@ -259,9 +269,11 @@ class SBIMT:
         for lines in open(alignments_path):
             try:
                 self.alignments[lines.split()[0]]
-                self.alignments[lines.split()[0]][lines.split()[1]] = float(lines.split()[2])
+                self.alignments[lines.split()[0]][lines.split()[1]] = \
+                    float(lines.split()[2])
             except:
-                self.alignments[lines.split()[0]] = {lines.split()[1] : float(lines.split()[2])}
+                self.alignments[lines.split()[0]] = {
+                    lines.split()[1]: float(lines.split()[2])}
 
     def newSentence(self, src):
         """
@@ -325,13 +337,13 @@ class SBIMT:
                 elif alignments[m][1] > tgt:
                     alignments[m][1] -= 1
 
-
         old_target_to_phrase = self.target_to_phrase
         self.target_to_phrase = [[] for n in range(self.target_size)]
 
         # Source-target alignments given by Moses.
         for src, trg in alignments:
-            if self.artificial_source_at_beggining and not self.phrases[0].validated:
+            if (self.artificial_source_at_beggining
+                    and not self.phrases[0].validated):
                 # Exception for using prefix-based as a particula case of
                 # segment-based.
                 src -= 1
@@ -346,7 +358,8 @@ class SBIMT:
         index = 0
         for n in range(self.segments_size):
             for m in range(len(self.segments[n])):
-                self.target_to_phrase[segments_in_target[index]] = old_target_to_phrase[self.segments[n][m]]
+                self.target_to_phrase[segments_in_target[index]] = \
+                    old_target_to_phrase[self.segments[n][m]]
                 self.segments[n][m] = segments_in_target[index]
                 index += 1
 
@@ -382,7 +395,8 @@ class SBIMT:
             # Phrase is validated. (The segment is stored in it.)
             self.phrases[phrase_index].validated = True
             self.phrases[phrase_index].segment_position = phrase_index
-            self.phrases[phrase_index].translation = ' '.join([self.target[tr] for tr in segmnts[n]])
+            self.phrases[phrase_index].translation = ' '.join(
+                [self.target[tr] for tr in segmnts[n]])
 
             # Phrases aligned with any word of the segment is "merged" into
             # the phrase that represents the segment.
@@ -399,21 +413,25 @@ class SBIMT:
             if self.segments_size == 0:  # At the end of the list, if the
                 # list is empty.
                 self.segments.append(segmnts[n])
-                self.segments_string.append(self.phrases[phrase_index].translation.split())
+                self.segments_string.append(
+                    self.phrases[phrase_index].translation.split())
                 self.segments_size += 1
 
-            else: # At the corresponding position, otherwise.
+            else:  # At the corresponding position, otherwise.
                 inserted = False
                 for index in range(self.segments_size):
                     if segmnts[n][-1] < self.segments[index][0]:
                         self.segments.insert(index, segmnts[n])
-                        self.segments_string.insert(index, self.phrases[phrase_index].translation.split())
+                        self.segments_string.insert(
+                            index, self.phrases[
+                                phrase_index].translation.split())
                         self.segments_size += 1
                         inserted = True
                         break
                 if not inserted:
                     self.segments.append(segmnts[n])
-                    self.segments_string.append(self.phrases[phrase_index].translation.split())
+                    self.segments_string.append(
+                        self.phrases[phrase_index].translation.split())
                     self.segments_size += 1
 
             # Finally, mouse actions are computed (1 action for single-word
@@ -447,7 +465,8 @@ class SBIMT:
         # computed (1 action when deleting a single word and 2 when deleting
         # more than one).
         deleted_words = []
-        for n in range(self.segments[left_segment][-1] + 1, self.segments[right_segment][0]):
+        for n in range(self.segments[left_segment][-1] + 1,
+                       self.segments[right_segment][0]):
             deleted_words.append(n)
         if deleted_words != []:
             self.deleted_words.append(deleted_words)
@@ -458,70 +477,93 @@ class SBIMT:
             self.word_deletions += len(deleted_words)
 
         # Location of the phrases where the segments are stored.
-        right_phrase = self.phrases[self.target_to_phrase[self.segments[right_segment][0]][0]].segment_position
-        left_phrase = self.phrases[self.target_to_phrase[self.segments[left_segment][0]][0]].segment_position
+        right_phrase = self.phrases[self.target_to_phrase[self.segments[
+            right_segment][0]][0]].segment_position
+        left_phrase = self.phrases[self.target_to_phrase[self.segments[
+            left_segment][0]][0]].segment_position
 
         # If one of the segments contains an artificial source, it
         # is treated differently (to remove the artificial source):
-        if self.artificial_sources > 0 and (right_phrase >= self.source_size or left_phrase >= self.source_size):
+        if (self.artificial_sources > 0
+            and (right_phrase >= self.source_size
+                 or left_phrase >= self.source_size)):
             # If the articial source is in the right segment, the segments
             # are merged into the left phrase and the right phrase is deleted
             # (target_to_phrase list must be updated).
             if right_phrase >= self.source_size:
-                self.phrases[left_phrase].addTranslation(self.phrases[right_phrase].translation)
+                self.phrases[left_phrase].addTranslation(
+                    self.phrases[right_phrase].translation)
                 del self.phrases[right_phrase]
                 self.artificial_sources -= 1
                 for trg in range(self.target_size):
-                    if self.target_to_phrase[trg] != [] and self.target_to_phrase[trg][0] == right_phrase:
+                    if (self.target_to_phrase[trg] != []
+                            and self.target_to_phrase[trg][0] == right_phrase):
                         self.target_to_phrase[trg][0] = left_phrase
-                    elif self.target_to_phrase[trg] != [] and self.target_to_phrase[trg][0] > right_phrase:
+                    elif (self.target_to_phrase[trg] != []
+                          and self.target_to_phrase[trg][0] > right_phrase):
                         self.target_to_phrase[trg][0] -= 1
-                for source in range(self.source_size, self.source_size + self.artificial_sources):
+                for source in range(
+                        self.source_size,
+                        self.source_size + self.artificial_sources):
                     self.phrases[source].segment_position = source
 
             # If the articial source is in the left segment, the segments are
             # merged into the right phrase and the left phrase is deleted
             # (target_to_phrase list must be updated).
             else:
-                self.phrases[right_phrase].translation = self.phrases[left_phrase].translation + ' ' + self.phrases[right_phrase].translation
+                self.phrases[right_phrase].translation = (self.phrases[
+                    left_phrase].translation + ' '
+                    + self.phrases[right_phrase].translation)
                 del self.phrases[left_phrase]
                 self.artificial_sources -= 1
                 for trg in range(self.target_size):
-                    if self.target_to_phrase[trg] != [] and self.target_to_phrase[trg][0] == left_phrase:
+                    if (self.target_to_phrase[trg] != []
+                            and self.target_to_phrase[trg][0] == left_phrase):
                         self.target_to_phrase[trg][0] = right_phrase
-                    elif self.target_to_phrase[trg] != [] and self.target_to_phrase[trg][0] > left_phrase:
+                    elif (self.target_to_phrase[trg] != []
+                          and self.target_to_phrase[trg][0] > left_phrase):
                         self.target_to_phrase[trg][0] -= 1
-                for source in range(self.source_size, self.source_size + self.artificial_sources):
+                for source in range(
+                        self.source_size,
+                        self.source_size + self.artificial_sources):
                     self.phrases[source].segment_position = source
 
         # Otherwise, both segments are merged into the leftmost phrase.
         elif right_phrase < left_phrase:
             for src in self.phrases[left_phrase].sources:
                 self.phrases[right_phrase].addSource(src)
-            self.phrases[right_phrase].translation = self.phrases[left_phrase].translation + ' ' + self.phrases[right_phrase].translation
-            self.phrases[left_phrase].segment_position = self.phrases[right_phrase].segment_position
+            self.phrases[right_phrase].translation = \
+                self.phrases[left_phrase].translation + ' ' + self.phrases[
+                    right_phrase].translation
+            self.phrases[left_phrase].segment_position = self.phrases[
+                right_phrase].segment_position
             self.phrases[left_phrase].translation = ''
             for trg in range(self.target_size):  # target_to_phrase is updated
                 # so that all targets pointing to left phrase point now to
                 # right phrase.
-                if self.target_to_phrase[trg] != [] and self.target_to_phrase[trg][0] == left_phrase:
+                if (self.target_to_phrase[trg] != []
+                        and self.target_to_phrase[trg][0] == left_phrase):
                     self.target_to_phrase[trg][0] = right_phrase
 
         else:
             for src in self.phrases[right_phrase].sources:
                 self.phrases[left_phrase].addSource(src)
-            self.phrases[left_phrase].addTranslation(self.phrases[right_phrase].translation)
-            self.phrases[right_phrase].segment_position = self.phrases[left_phrase].segment_position
+            self.phrases[left_phrase].addTranslation(
+                self.phrases[right_phrase].translation)
+            self.phrases[right_phrase].segment_position = self.phrases[
+                left_phrase].segment_position
             self.phrases[right_phrase].translation = ''
             for trg in range(self.target_size):  # target_to_phrase is updated
                 # so that all targets pointing to right phrase point now to
                 # left phrase.
-                if self.target_to_phrase[trg] != [] and self.target_to_phrase[trg][0] == right_phrase:
+                if (self.target_to_phrase[trg] != []
+                        and self.target_to_phrase[trg][0] == right_phrase):
                     self.target_to_phrase[trg][0] = left_phrase
 
         # Finally, segments are merged into the left segment.
         self.segments[left_segment] += self.segments[right_segment]
-        self.segments_string[left_segment] += self.segments_string[right_segment]
+        self.segments_string[left_segment] += self.segments_string[
+            right_segment]
         del self.segments[right_segment]
         del self.segments_string[right_segment]
         self.segments_size -= 1
@@ -543,7 +585,8 @@ class SBIMT:
             if not self.phrases[n].validated:
                 try:
                     self.alignments[self.source[n].lower()][word.lower()]
-                    probabilities[n] = self.alignments[self.source[n].lower()][word.lower()]
+                    probabilities[n] = self.alignments[
+                        self.source[n].lower()][word.lower()]
                 except:
                     continue
 
@@ -570,20 +613,25 @@ class SBIMT:
             self.target_to_phrase.append([])
             self.target_size += 1
 
-        elif self.target_to_phrase[wrong_word] == [] or sum([1 for src in self.target_to_phrase[wrong_word] if not self.phrases[src].validated]) > 0:  # The user is replacing a word.
-            # (Nothing special to consider.)
+        elif (self.target_to_phrase[wrong_word] == []
+              or sum([1 for src in self.target_to_phrase[wrong_word]
+                      if not self.phrases[src].validated]) > 0):  # The user
+            #  is replacing a word. (Nothing special to consider.)
             trg = wrong_word
 
         else:  # The user is inserting a word between segments.
             # Target data structures are increased in one element at the
             # position of the target word corrected.
             trg = wrong_word
-            self.target = self.target[:trg] + [corrected_word] + self.target[trg:]
-            self.target_to_phrase = self.target_to_phrase[:trg] + [[]] + self.target_to_phrase[trg:]
+            self.target = self.target[:trg] + [corrected_word] + self.target[
+                trg:]
+            self.target_to_phrase = \
+                self.target_to_phrase[:trg] + [[]] + self.target_to_phrase[
+                    trg:]
             for sgmnts in range(self.segments_size):
                 for w in range(len(self.segments[sgmnts])):
                     if self.segments[sgmnts][w] >= trg:
-                       self.segments[sgmnts][w]  += 1
+                        self.segments[sgmnts][w] += 1
             self.target_size += 1
 
         # The validated phrase into which the new segment (composed of the
@@ -599,7 +647,7 @@ class SBIMT:
 
         # If no source is aligned with the segment, an artificial source
         # is created.
-        if src == None:
+        if src is None:
             self.phrases.append(Phrase(-1))
             src = self.source_size + self. artificial_sources
             self.artificial_sources += 1
@@ -650,7 +698,8 @@ class SBIMT:
         the source part of the tag.
         """
         if target == '':
-            return '<x translation="' + self.empty_token + '">' + source + '</x><wall/>'
+            return ('<x translation="' + self.empty_token + '">'
+                    + source + '</x><wall/>')
 
         return '<x translation="' + target + '">' + source + '</x><wall/>'
 
@@ -680,22 +729,19 @@ class SBIMT:
 
         # Take into account the special merge case in which the first segment
         # must be located at the beggining of the new hypothesis.
-        if self.artificial_source_at_beggining and not self.phrases[0].validated:
+        if (self.artificial_source_at_beggining
+                and not self.phrases[0].validated):
             segment_index = 1
             phrase_to_avoid = self.target_to_phrase[self.segments[0][0]][0]
             self.xml += self.xmlTag(' '.join(self.segments_string[0]), '.')
 
         # Phrases are visited in the source order.
         for n in range(self.source_size):
-
-            '''if segment_index >= self.segments_size:
-                print segment_index, self.segments_size, self.segments
-                break'''
-
             # If the maximum number of sources is reached, the tag is created
             # (no matter its content).
             if pending_phrases_size == self.max_sources:
-                self.xml += self.xmlTag(segment_translation, ' '.join(pending_phrases)) + ' '
+                self.xml += self.xmlTag(segment_translation, ' '.join(
+                    pending_phrases)) + ' '
                 pending_phrases = []
                 pending_phrases_size = 0
                 segment_translation = ''
@@ -705,9 +751,12 @@ class SBIMT:
             if not self.phrases[n].validated:
                 if pending_phrases_size > 0:  # Add to a tag phrases that
                     # are pending.
-                    self.xml += self.xmlTag(segment_translation, ' '.join(pending_phrases)) + ' '
+                    self.xml += self.xmlTag(segment_translation, ' '.join(
+                        pending_phrases)) + ' '
                 # Add the sources belonging to the phrase into the xml.
-                self.xml += ' '.join([self.source[w] for w in self.phrases[n].sources if not self.phrases[w].validated]) + ' '
+                self.xml += ' '.join([self.source[w]
+                                      for w in self.phrases[n].sources
+                                      if not self.phrases[w].validated]) + ' '
                 # Reset the list of pending phrases and segment translation.
                 pending_phrases = []
                 pending_phrases_size = 0
@@ -715,17 +764,20 @@ class SBIMT:
                 empty_translation = True
 
             # If the current phrases is validated and represents a segment:
-            elif self.phrases[n].segment_position == n and n != phrase_to_avoid:
+            elif (self.phrases[n].segment_position == n
+                  and n != phrase_to_avoid):
                 if not empty_translation:  # Add to a tag phrases that
                     # are pending.
-                    self.xml += self.xmlTag(segment_translation, ' '.join(pending_phrases)) + ' '
+                    self.xml += self.xmlTag(segment_translation,
+                                            ' '.join(pending_phrases)) + ' '
                     pending_phrases = []
                     pending_phrases_size = 0
                 # Add current phrase to the list of pending phrases and
                 # current segment to the segment translation.
                 pending_phrases.append(self.source[n])
                 pending_phrases_size += 1
-                segment_translation = ' '.join(self.segments_string[segment_index])
+                segment_translation = ' '.join(
+                    self.segments_string[segment_index])
                 empty_translation = False
                 segment_index += 1
 
@@ -737,12 +789,15 @@ class SBIMT:
                 pending_phrases_size += 1
 
         if pending_phrases_size > 0:  # Add to a tag phrases that are pending.
-            self.xml += self.xmlTag(segment_translation, ' '.join(pending_phrases)) + ' '
+            self.xml += self.xmlTag(segment_translation, ' '.join(
+                pending_phrases)) + ' '
 
         # Finally, add all phrases with artificial sources into xml tags.
-        for n in range(self.source_size, self.source_size + self.artificial_sources):
+        for n in range(self.source_size,
+                       self.source_size + self.artificial_sources):
             if n != phrase_to_avoid and segment_index < self.segments_size:
-                self.xml += self.xmlTag(' '.join(self.segments_string[segment_index]), '.')
+                self.xml += self.xmlTag(' '.join(
+                    self.segments_string[segment_index]), '.')
                 segment_index += 1
 
     def generateXMLPB(self):
@@ -778,10 +833,11 @@ class SBIMT:
         # Phrases are visited in the source order.
         for n in range(self.source_size):
 
-            #I f the maximum number of sources is reached, the tag is
+            # If the maximum number of sources is reached, the tag is
             # created (no matter its content).
             if pending_phrases_size == self.max_sources:
-                self.xml += self.xmlTag(segment_translation, ' '.join(pending_phrases)) + ' '
+                self.xml += self.xmlTag(segment_translation,
+                                        ' '.join(pending_phrases)) + ' '
                 pending_phrases = []
                 pending_phrases_size = 0
                 segment_translation = ''
@@ -791,14 +847,16 @@ class SBIMT:
             if not self.phrases[n].validated:
                 if pending_phrases_size > 0:  # Add to a tag phrases that
                     # are pending.
-                    self.xml += self.xmlTag(segment_translation, ' '.join(pending_phrases)) + ' '
+                    self.xml += self.xmlTag(segment_translation,
+                                            ' '.join(pending_phrases)) + ' '
                 # Add the sources belonging to the phrase into the xml.
-                self.xml += ' '.join([self.source[w] for w in self.phrases[n].sources if not self.phrases[w].validated]) + ' '
+                self.xml += ' '.join([
+                    self.source[w] for w in self.phrases[n].sources
+                    if not self.phrases[w].validated]) + ' '
                 # Reset the list of pending phrases and segment translation.
                 pending_phrases = []
                 pending_phrases_size = 0
                 segment_translation = ''
-                empty_translation = True
 
             # If the current phrase is a validated phrase:
             else:
@@ -807,14 +865,15 @@ class SBIMT:
                 pending_phrases_size += 1
 
         if pending_phrases_size > 0:  # Add to a tag phrases that are pending.
-            self.xml += self.xmlTag(segment_translation, ' '.join(pending_phrases)) + ' '
+            self.xml += self.xmlTag(
+                segment_translation, ' '.join(pending_phrases)) + ' '
 
         self.artificial_source_at_beggining = True
 
     def endOfSentence(self):
         """
-        This method accounts for the user indicating that the current validated segments
-        conform their desired translation.
+        This method accounts for the user indicating that the current
+        validated segments conform their desired translation.
         """
 
         # Non-validated phrases become validated. (With an "empty"
@@ -831,7 +890,8 @@ class SBIMT:
 
     def validateTranslation(self):
         """
-        This method validates the current hypothesis as the desired translation.
+        This method validates the current hypothesis as the desired
+        translation.
         """
 
         # Mouse actions are increased (by 1).
@@ -875,34 +935,48 @@ class SBIMT:
                 continue
 
             # Beginning and ending of the hypothesis.
-            if (n == 0 or n == self.target_size - 1) and target_in_segments[n] == None:
+            if ((n == 0 or n == self.target_size - 1)
+                    and target_in_segments[n] is None):
                 p = 0
                 for src in range(self.source_size):
                     try:
-                        if self.alignments[self.source[src].lower()][self.target[n].lower()] > p:
-                            p = self.alignments[self.source[src].lower()][self.target[n].lower()]
+                        if (self.alignments[
+                                self.source[src].lower()][
+                                    self.target[n].lower()] > p):
+                            p = self.alignments[self.source[src].lower()][
+                                self.target[n].lower()]
                     except:
                         continue
                 probabilities[n] = p
 
             # Word before a segment.
-            elif target_in_segments[n] == None and target_in_segments[n + 1] != None and target_in_segments[n - 1] != target_in_segments[n + 1]:
+            elif (target_in_segments[n] is None
+                  and target_in_segments[n + 1] is not None
+                  and target_in_segments[n - 1] != target_in_segments[n + 1]):
                 p = 0
                 for src in range(self.source_size):
                     try:
-                        if self.alignments[self.source[src].lower()][self.target[n].lower()] > p:
-                            p = self.alignments[self.source[src].lower()][self.target[n].lower()]
+                        if (self.alignments[
+                                self.source[src].lower()][
+                                    self.target[n].lower()] > p):
+                            p = self.alignments[self.source[src].lower()][
+                                self.target[n].lower()]
                     except:
                         continue
                 probabilities[n] = p
 
             # Word after a segment.
-            elif target_in_segments[n] == None and target_in_segments[n - 1] != None and target_in_segments[n - 1] != target_in_segments[n + 1]:
+            elif (target_in_segments[n] is None
+                  and target_in_segments[n - 1] is not None
+                  and target_in_segments[n - 1] != target_in_segments[n + 1]):
                 p = 0
                 for src in range(self.source_size):
                     try:
-                        if self.alignments[self.source[src].lower()][self.target[n].lower()] > p:
-                            p = self.alignments[self.source[src].lower()][self.target[n].lower()]
+                        if (self.alignments[
+                                self.source[src].lower()][
+                                    self.target[n].lower()] > p):
+                            p = self.alignments[self.source[src].lower()][
+                                self.target[n].lower()]
                     except:
                         continue
                 probabilities[n] = p
@@ -937,11 +1011,13 @@ class SBIMT:
             for trg in self.segments[n]:
                 target_in_segments[trg] = n
         for n in range(self.target_size):
-            if target_in_segments[n] == None:
+            if target_in_segments[n] is None:
                 for src in range(self.source_size):
                     try:
-                        self.alignments[self.source[src].lower()][self.target[n].lower()]
-                        confidence[n] = self.alignments[self.source[src].lower()][self.target[n].lower()]
+                        self.alignments[
+                            self.source[src].lower()][self.target[n].lower()]
+                        confidence[n] = self.alignments[
+                            self.source[src].lower()][self.target[n].lower()]
                     except:
                         continue
 
