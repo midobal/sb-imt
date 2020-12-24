@@ -33,6 +33,10 @@ def parse_args():
     parser.add_argument('-p', '--probability', metavar='threshold',
                         required=False, type=float, help='probability \
                         threshold. (Default 0.)', default=0)
+    parser.add_argument('-m', '--moses', metavar='moses_bin',
+                        required=False, default='/opt/moses/bin/moses',
+                        help='Path to moses bin. (Default: \
+                        /opt/moses/bin/moses.)')
 
     return parser.parse_args()
 
@@ -48,7 +52,7 @@ if __name__ == "__main__":
     # Session set-up.
     sys.stderr.write("\x1b[2J\x1b[H")
     sys.stderr.write('Preparing systems  (it may take a while)...\n')
-    session = SBIMT(args.config, args.alignments, args.probability)
+    session = SBIMT(args.config, args.moses, args.alignments, args.probability)
     reference_file = open(args.references, 'r')
     total_sentences = 0
     for s in open(args.sources):

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import sys
 import subprocess
-import os
 from random import shuffle
 from sbimt.phrase import Phrase
 
@@ -11,7 +10,7 @@ class SBIMT:
     This class implements the segment-based IMT methodology.
     """
 
-    def __init__(self, moses_ini, HMM_alignments, HMM_probability=0.0,
+    def __init__(self, moses_ini, moses, HMM_alignments, HMM_probability=0.0,
                  CM_threshold=0.0, max_phrase_size=20):
         """
         This method initializes a new segment-based IMT session. The method
@@ -23,13 +22,14 @@ class SBIMT:
         (default: 0.0) and the maximum size of a phrase (default: 20).
         """
 
-        self.ensureMosesVariableDefined()
-        self.moses = subprocess.Popen('$MOSES/bin/moses -xml-input '
-                                      + 'exclusive -f ' + moses_ini
+        self.moses = subprocess.Popen(moses + ' -xml-input exclusive -f '
+                                      + moses_ini
                                       + ' -print-alignment-info 2> /dev/null',
                                       shell=True, stdin=subprocess.PIPE,
                                       stdout=subprocess.PIPE, bufsize=1,
                                       universal_newlines=True)
+
+        self.testMoses()
 
         self.loadAlignments(HMM_alignments)
         self.alignment_probability = HMM_probability
@@ -45,6 +45,20 @@ class SBIMT:
         self.characters = 0
 
         self.empty_token = '__EMPTY__'
+
+    def testMoses(self):
+        """
+        This method checks if moses is working.
+        """
+        try:
+            self.moses.stdin.write(self.xmlTag('Testing moses', 'test') + '\n')
+            translation = self.moses.stdout.readline()
+            if translation.strip() != 'Testing moses |||':
+                sys.stderr.write('Error loading moses. Check path to bin.\n')
+                sys.exit(-1)
+        except BrokenPipeError:
+            sys.stderr.write('Error loading moses. Check path to bin.\n')
+            sys.exit(-1)
 
     def getSegments(self):
         """
@@ -167,17 +181,6 @@ class SBIMT:
                     LCS_path[i][j] = LCS_path[i + 1][j]
 
         return [int(n) for n in list(reversed(LCS_path[0][0].split()))]
-
-    def ensureMosesVariableDefined(self):
-        """
-        This method checks if there is a variable pointing to Moses path and
-        aborts the execution if there is not.
-        """
-        if os.getenv('MOSES') == '':
-            sys.stderr.write('Error loading Moses. Please define a variable '
-                             + '"$MOSES" pointing to Moses path (e.g., '
-                             + 'export MOSES=/opt/moses)\n')
-            sys.exit(-1)
 
     def loadAlignments(self, alignments_path):
         """
