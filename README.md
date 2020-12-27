@@ -1,5 +1,5 @@
 # Segment-Based IMT
-Segment-based Interactive Machine Translation implementation based on Moses XML scheme.
+Segment-based Interactive Machine Translation implementation based on Moses XML scheme, using confidence measures to select the order in which words should be corrected.
 
 ## Requirements
 Python, [Moses](https://github.com/moses-smt/mosesdecoder) and [mgiza](https://github.com/moses-smt/mgiza).
@@ -20,7 +20,8 @@ where `src_file` and `tgt_file` are the source and target of the training datase
 You can simulate a user working on a segment-based IMT framework by doing:
 ```
 simulation.py [-h] -s source_file -r reference_file -c moses_ini -a
-                     alignments_file [-v] [-x] [-p threshold] [-m moses_bin]
+                     alignments_file [-v] [-x] [-p threshold] [-t threshold]
+                     [-l [1-3]] [-m moses_bin]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -37,6 +38,12 @@ optional arguments:
   -x, --xml             Show XML markup.
   -p threshold, --probability threshold
                         probability threshold. (Default 0.)
+  -t threshold, --confidence threshold
+                        condidence threshold. (Default 0.)
+  -l [1-3], --level [1-3]
+                        what to use CM for: 1- use CM to validate segments. 2-
+                        use CM to correct words. 3- use CM to both validate
+                        and correct. (Default 3.)
   -m moses_bin, --moses moses_bin
                         Path to moses bin. (Default: /opt/moses/bin/moses.)
 ```
