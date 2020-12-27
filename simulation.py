@@ -33,6 +33,15 @@ def parse_args():
     parser.add_argument('-p', '--probability', metavar='threshold',
                         required=False, type=float, help='probability \
                         threshold. (Default 0.)', default=0)
+    parser.add_argument('-t', '--confidence', metavar='threshold',
+                        required=False, type=float, help='condidence \
+                        threshold. (Default 0.)', default=0)
+    parser.add_argument('-l', '--level', metavar='[1-3]',
+                        required=False, type=int, help='what to use CM for: \
+                        1- use CM to validate segments. 2- use CM to \
+                        correct words. 3- use CM to both validate and \
+                        correct.\n(Default 3.)', default=3,
+                        choices=range(1, 4))
     parser.add_argument('-m', '--moses', metavar='moses_bin',
                         required=False, default='/opt/moses/bin/moses',
                         help='Path to moses bin. (Default: \
@@ -52,8 +61,10 @@ if __name__ == "__main__":
     # Session set-up.
     sys.stderr.write("\x1b[2J\x1b[H")
     sys.stderr.write('Preparing systems  (it may take a while)...\n')
-    session = SBIMT(args.config, args.moses, args.alignments, args.probability)
+    session = SBIMT(args.config, args.alignments, args.probability,
+                    args.confidence)
     reference_file = open(args.references, 'r')
+    translation_file = open('test.hyp', 'w')
     total_sentences = 0
     for s in open(args.sources):
         total_sentences += 1
@@ -69,10 +80,9 @@ if __name__ == "__main__":
         # Show progess.
         sys.stderr.write("\x1b[2J\x1b[H")
         sys.stderr.write('Progress: ' + str(current_sentence) + '/'
-                         + str(total_sentences)
-                         + ' [' + "{0:.2f}".format(current_sentence
-                                                   / float(total_sentences)
-                                                   * 100) + ' %]\n')
+                         + str(total_sentences) + ' [' + "{0:.2f}".format(
+                             current_sentence / float(total_sentences) * 100)
+                         + ' %]\n')
         current_sentence += 1
 
         # Session initialization.
@@ -99,15 +109,20 @@ if __name__ == "__main__":
                 continue
 
             # Segment Validation.
-            sim.validateSegments(session)
-
-            # Segment Merging.
-            sim.mergeSegments(session)
+            if args.level == 1 or args.level == 3:
+                segment_validated = sim.validateSegmentsCM(session)
+            else:
+                segment_validated = sim.validateSegments(session)
 
             # Word Correction / Sentence Validation.
-            new_word = sim.wordCorrection(session)
+            if args.level == 2 or args.level == 3:
+                new_word = 'Ò.Ó'
+                while new_word == 'Ò.Ó':
+                    new_word = sim.wordCorrectionCM(session)
+            else:
+                new_word = sim.wordCorrection(session)
 
-            if new_word == '':
+            if new_word == '':  # and not segment_validated:
                 session.validateTranslation()
                 if args.verbose:
                     print('')
@@ -116,7 +131,8 @@ if __name__ == "__main__":
                     print('WORD SEGMENTS:', session.getWordSegments())
                     print('DELETED WORDS:', session.getDeletedWords())
                     print('')
-                break
+                validated_translation = True
+                continue
 
             # XML Generation.
             session.generateXML()
@@ -128,7 +144,7 @@ if __name__ == "__main__":
                 print('WORD SEGMENTS:', session.getWordSegments())
                 print('DELETED WORDS:', session.getDeletedWords())
                 print('')
-                if args.XML:
+                if args.xml:
                     print('XML:', session.getXML())
 
         if args.verbose:
@@ -139,7 +155,10 @@ if __name__ == "__main__":
             print("-----------------------------------------")
             print('')
 
+        translation_file.write(session.getValidatedTranslation() + '\n')
+
     # Show metrics.
     print('WSR:', "{0:.1f}".format(session.getWSR()))
     print('MAR:', "{0:.1f}".format(session.getMAR()))
     print('WDR:', "{0:.1f}".format(session.getWDR()))
+    translation_file.close()

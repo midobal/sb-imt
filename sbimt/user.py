@@ -25,14 +25,14 @@ class User:
         hyp = session.getTranslation().split()
         segments = session.getSegments()
 
-        # New segments are obtained by applied the longest common subsequence
-        # algorithm to hypothesis and reference.
+        # New segments are obtained by appliying the longest common
+        # subsequence algorithm to hypothesis and reference.
         target_index, reference_index = self.commonWords(hyp)
 
-        # Due to matching errors with the LCS algorithm, we have to make sure
-        # that all previous validated segments are part of the algorithm output
-        # (if they're not, that means the algorithm has validated a segment
-        # inconsistently).
+        # Due to matching errors with the LCS algorithm, we have to make
+        # sure that all previous validated segments are part of the
+        # algorithm output (if they're not, that means the algorithm
+        # has validated a segment inconsistently).
         pending_references = [False for ref in self.reference]
         for n in range(self.reference_size):
             if self.reference_in_segment[n] is not None:
@@ -42,36 +42,39 @@ class User:
         validated_segments = []
         validated_segments_reference = []
         current_segments = []
-        current_segments_ref = []
+        current_segments_reference = []
         current_segment_index = -1
         old_reference_in_segment = [n for n in self.reference_in_segment]
         for n in range(len(reference_index)):
 
             # If current word belongs to a previous validated segment:
             if self.reference_in_segment[reference_index[n]] is not None:
-                # If the corresponding target is not the one that is supposed
-                # to be:
-                if target_index[n] not in segments[old_reference_in_segment[
-                        reference_index[n]]]:
+                # If the corresponding target is not the one that is
+                # supposed to be:
+                if target_index[n] not in segments[
+                        old_reference_in_segment[reference_index[n]]]:
                     # Discard the word as an error.
                     continue
+                # Else:
                 if current_segments != []:
                     # Store the current saved words as a new validated segment.
                     validated_segments.append(current_segments)
-                    validated_segments_reference.append(current_segments_ref)
+                    validated_segments_reference.append(
+                        current_segments_reference)
                     current_segments = []
-                    current_segments_ref = []
+                    current_segments_reference = []
                 # Unmark the word as pending.
                 current_segment_index = self.reference_in_segment[
                     reference_index[n]]
                 pending_references[reference_index[n]] = False
                 continue
 
-            # Otherwise, check if there has been a matching error with LCS
-            # algorithm. (For a given word, it is considered to be errouneus
-            # either if there exists a previous pending word--a word that
-            # should have been validated before that one--or or a future
-            # pending word that is not on the list of new validated words.)
+            # Otherwise, check if there has been a matching error with
+            # LCS algorithm. (For a given word, it is considered to be
+            # errouneus either if there exists a previous pending word--a
+            # word that should have been validated before that one--or
+            # a future pending word that is not on the list of new
+            # validated words.)
             erroneus_segment = False
             for index in range(reference_index[n] - 1, -1, -1):
                 if pending_references[index]:
@@ -86,13 +89,14 @@ class User:
             if erroneus_segment:  # Discard the word if an error is detected.
                 continue
 
-            # If no error is detected, add the word to the new validated
-            # segments:
+            # If no error is detected, add the word to the new
+            # validated segments:
+
             if current_segments == []:  # If the list of current new segment
                 # is empty:
                 # Add the word as a beggining of a new segment.
                 current_segments.append(target_index[n])
-                current_segments_ref.append(reference_index[n])
+                current_segments_reference.append(reference_index[n])
                 self.reference_in_segment[reference_index[n]] = \
                     current_segment_index + 1
                 for index in range(reference_index[n] + 1,
@@ -101,12 +105,12 @@ class User:
                         self.reference_in_segment[index] += 1
 
             elif (target_index[n] == current_segments[-1] + 1
-                  and reference_index[n] == current_segments_ref[-1] + 1):
-                # Else, if the word is following one of the current new
-                # segment:
+                  and reference_index[n] == current_segments_reference[
+                      -1] + 1):  # Else,
+                # if the word is following one of the current new segment:
                 # Add the word to the current new segment.
                 current_segments.append(target_index[n])
-                current_segments_ref.append(reference_index[n])
+                current_segments_reference.append(reference_index[n])
                 self.reference_in_segment[reference_index[n]] = \
                     current_segment_index + 1
 
@@ -115,9 +119,9 @@ class User:
                 # create a current new segment with the word as a beggining
                 # of the segment.
                 validated_segments.append(current_segments)
-                validated_segments_reference.append(current_segments_ref)
+                validated_segments_reference.append(current_segments_reference)
                 current_segments = [target_index[n]]
-                current_segments_ref = [reference_index[n]]
+                current_segments_reference = [reference_index[n]]
                 current_segment_index += 1
                 self.reference_in_segment[reference_index[n]] = \
                     current_segment_index + 1
@@ -130,26 +134,74 @@ class User:
         # segment pending to be added to the list.
         if current_segments != []:
             validated_segments.append(current_segments)
-            validated_segments_reference.append(current_segments_ref)
+            validated_segments_reference.append(current_segments_reference)
 
         # Finally, make sure that there are no pending words.
         for n in range(self.reference_size):
             if pending_references[n]:
                 # Discard all new segments if an error is detected.
                 self.reference_in_segment = old_reference_in_segment
-                return []
+                return False
 
-        # Validate them otherwise.
+        # Otherwise, if there are segments to validate,
+        if validated_segments == []:
+            return False
+        # validate them
         session.segmentValidation(validated_segments)
+        return True
+
+    def validateSegmentsCM(self, session):
+        """
+        This method simulates a user validating segments. The user trustes
+        the system blindly and validates those segments for which the
+        system has a confidence greater than a threshold. The method
+        receives an object of the SBIMT class that contains the current
+        session.
+        """
+
+        # Current hypothesis, validated segments and new segments.
+        hyp = session.getTranslation().split()
+        new_segments = session.mostLikelySegments()
+
+        # See which words from the reference have been validated.
+        # (Use longest common subsequence to relate reference and
+        # target--the target is used as an intermediate to know
+        # in which segment each reference word is located.)
+        target_in_new_segments = [(hyp[trg], n)
+                                  for n in range(len(new_segments))
+                                  for trg in new_segments[n]]
+        target_index, reference_index = self.commonWords(
+            [trg[0] for trg in target_in_new_segments])
+        segment_to_reference = [[] for segment in new_segments]
+        for n in range(len(reference_index)):
+            self.reference_in_segment[int(reference_index[n])] = \
+                target_in_new_segments[int(target_index[n])][1]
+            segment_to_reference[target_in_new_segments[
+                int(target_index[n])][1]].append(int(reference_index[n]))
+
+        # Missing words in a segment are considered as if it were in
+        # the segment.
+        for segment in segment_to_reference:
+            if segment != []:
+                for n in range(segment[0] + 1, segment[-1]):
+                    self.reference_in_segment[n] = \
+                        self.reference_in_segment[n - 1]
+
+        # If there are new segments,
+        if new_segments == []:
+            return False
+        # validate them.
+        session.segmentValidation(new_segments)
+        return True
 
     def commonWords(self, hyp):
         """
-        This function computes the longest common subsequence between two
-        sequences and returns a vector with the indexes of the position of
-        the subsequence in the first sequence, and a vector with the indexes
-        of the position of the subsequence in the second sequence. The first
-        sequence corresponds to the current hypothesis and the second
-        corresponds to the reference.
+        This function computes the longest common subsequence between
+        two sequences and returns a vector with the indexes of the
+        position of the subsequence in the first sequence, and a vector
+        with the indexes of the position of the subsequence in the second
+        sequence. The first sequence corresponds to the current hypothesis
+        and the second corresponds to the reference.
         """
 
         m = len(hyp)
@@ -185,42 +237,36 @@ class User:
                     LCS_xpath[i][j] = LCS_xpath[i + 1][j]
                     LCS_ypath[i][j] = LCS_ypath[i + 1][j]
 
-        return [int(index) for index in list(reversed(
-            LCS_xpath[0][0].split()))], [int(index) for index in list(
-                reversed(LCS_ypath[0][0].split()))]
+        return ([int(index) for index in list(
+            reversed(LCS_xpath[0][0].split()))],
+                [int(index) for index in list(
+                    reversed(LCS_ypath[0][0].split()))])
 
     def mergeSegments(self, session):
         """
-        This method simulates a user merging two consecutive segments. The
-        method receives an object of the SBIMT class that contains the
-        current session.
+        This method simulates a user merging two consecutive segments.
+        The method receives an object of the SBIMT class that contains
+        the current session.
         """
 
-        # Current hypothesis and validated segments.
+        # Current validated segments.
         segments = session.getSegments()
-        merged = False
 
-        # SPECIAL CASE: if there are incorrect words before the first segment
-        # (the first segment containing the begin of the reference), those
-        # words must be deleted so that the next hypothesis starts with
+        # SPECIAL CASE: if there are incorrect words before the first
+        # segment (the first segment containing the begin of the reference),
+        # those words must be deleted so that the next hypothesis starts with
         # the first segment.
         if self.reference_in_segment[0] is not None and segments[0][0] != 0:
             session.mergeSegments(-1, 0)
-            return True
 
         # Word by word, check if a word and its previous word belong to two
         # different segments.
         for n in range(1, self.reference_size):
-
-            if self.reference_in_segment[n] is None:
-                break
-                continue
-
             # If they do:
-            if (self.reference_in_segment[n - 1] is not None
-                and self.reference_in_segment[n - 1]
-                    != self.reference_in_segment[n]):
-                merged = True
+            if (self.reference_in_segment[n] is not None
+                and self.reference_in_segment[n - 1] is not None
+                and self.reference_in_segment[
+                    n - 1] == self.reference_in_segment[n] - 1):
                 # Merge those segments.
                 session.mergeSegments(self.reference_in_segment[n - 1],
                                       self.reference_in_segment[n])
@@ -230,7 +276,6 @@ class User:
                     if (self.reference_in_segment[index] is not None
                             and self.reference_in_segment[index] >= old_index):
                         self.reference_in_segment[index] -= 1
-        return merged
 
     def wordCorrection(self, session):
         """
@@ -244,43 +289,222 @@ class User:
         hyp = session.getTranslation().split()
         segments = session.getSegments()
 
-        # If the reference's first word hasn't been validated:
-        if self.reference_in_segment[0] is None:
-            # Correct the hypothesis' first word.
-            self.reference_in_segment[0] = 0
-            # Update reference_in_segment list (a new segment is going to
-            # be added at the beggining).
-            for index in range(1, self.reference_size):
-                if self.reference_in_segment[index] is not None:
-                    self.reference_in_segment[index] += 1
-            session.wordCorrection(0, self.reference[0])
-            return self.reference[0]
+        # Target in segments
+        target_in_segments = [None for trg in hyp]
+        for n in range(len(segments)):
+            for trg in segments[n]:
+                target_in_segments[trg] = n
 
-        # Otherwise, look for the reference's first unvalidated word.
-        for n in range(1, self.reference_size):
+        # Search for the first wrong word:
+        pending_words = []
+        if segments == []:
+            trg = 0
+        else:
+            trg = segments[0][-1] + 1
+        for n in range(self.reference_size):
             if self.reference_in_segment[n] is None:
-                # Once located, find the target which should be corrected.
-                # (The target in the hypothesis that follows the segment in
-                # which the previous reference--n - 1--was located.)
-                self.reference_in_segment[n] = self.reference_in_segment[
-                    n - 1] + 1
-                # Update reference_in_segment (a new segment is going to be
-                # added after the segment in which the previous reference was
-                # located).
+                # If the first wrong word is the reference's first word:
+                if n == 0:
+                    # Ensure the hypothesis doesn't start as it should.
+                    # (The one validating is the system, not the user!)
+                    if hyp[0] == self.reference[0]:
+                        # If it is, mark it as correct and look for the next
+                        # wrong word.
+                        self.reference_in_segment[0] = 0
+                        # pending_words.append([0])
+                        session.segmentValidation([[0]])
+                        trg = 1
+                        continue
+                    # Correct the hypothesis' first word,
+                    self.reference_in_segment[0] = 0
+                    session.wordCorrection(0, self.reference[0])
+                    # and update reference_in_segment list (a new segment
+                    # is going to be added at the beggining).
+                    for index in range(1, self.reference_size):
+                        if self.reference_in_segment[index] is not None:
+                            self.reference_in_segment[index] += 1
+                    return self.reference[0]
+
+                # Else, check if the word to correct is actually right.
+                # (The one validating is the system, not the user!)
+                if trg < len(hyp) and hyp[trg] == self.reference[n]:
+                    # If it is, mark it as correct and look for the next
+                    # wrong word.
+                    self.reference_in_segment[n] = 0
+                    # pending_words.append([trg])
+                    session.segmentValidation([[trg]])
+                    session.mergeSegments(0, 1)
+                    trg += 1
+                    # Make sure that the next word is not in a segment
+                    if trg < len(hyp) and target_in_segments[trg] is not None:
+                        session.mergeSegments(0, 1)
+                        for r in range(self.reference_size):
+                            if (self.reference_in_segment[r] is not None
+                                    and self.reference_in_segment[r] > 0):
+                                self.reference_in_segment[r] -= 1
+                        first_segment = False
+                        for r in range(self.reference_size - 1, -1, -1):
+                            if self.reference_in_segment[r] == 0:
+                                first_segment = True
+                            elif first_segment:
+                                self.reference_in_segment[r] = 0
+                        trg = segments[0][-1] + 1
+                    continue
+
+                # Otherwise, correct the word,
+                self.reference_in_segment[n] = max(1,
+                                                   min(1, len(
+                                                       pending_words) + 1))
+                # self.reference_in_segment[n] = 0
+                session.wordCorrection(trg, self.reference[n])
+                # update reference_in_segment list (a new segment is
+                # going to be added at the beginning)
                 for index in range(n + 1, self.reference_size):
                     if self.reference_in_segment[index] is not None:
                         self.reference_in_segment[index] += 1
-                session.wordCorrection(segments[
-                    self.reference_in_segment[n - 1]][-1] + 1,
-                                        self.reference[n])
+                # and validate the pending words.
                 return self.reference[n]
 
-        # If all word in the reference have already been validated:
-
-        if hyp[-1] != self.reference[-1]:  # If hypothesis and reference are
-            # different: Input an end of sentence.
+        # Finally, if all words in the reference have already been validated
+        # and hypothesis and reference differ:
+        if segments[-1][-1] != len(hyp) - 1:
+            # Input an end of sentence.
             session.endOfSentence()
             return '#'
+
+        # Otherwise, there's no correction to be made.
+        return ''
+
+    def wordCorrectionCM(self, session):
+        """
+        This method simulates a user correcting a word. The user corrects
+        the word which the system indicates that it has the lest confidence
+        in that word being correct. The method receives an object of the
+        SBIMT class that contains the current session.
+        """
+
+        # Current hypothesis, validated segments and word to correct.
+        hyp = session.getTranslation().split()
+        segments = session.getSegments()
+        trg = session.mostUnlikelyTarget()
+
+        # There is no word to correct
+        if trg is None:
+            for n in range(self.reference_size):
+                if self.reference_in_segment[n] is None:
+                    if n == 0:
+                        session.wordCorrection(0, self.reference[0])
+                        self.reference_in_segment[n] = 0
+                        for r in range(n + 1, self.reference_size):
+                            if self.reference_in_segment[r] is not None:
+                                self.reference_in_segment[r] += 1
+                        return self.reference[0]
+                    else:
+                        session.wordCorrection(
+                            segments[self.reference_in_segment[
+                                n - 1]][-1] + 1, self.reference[n])
+                        self.reference_in_segment[n] = \
+                            self.reference_in_segment[n - 1] + 1
+                        for r in range(n + 1, self.reference_size):
+                            if self.reference_in_segment[r] is not None:
+                                self.reference_in_segment[r] += 1
+                        return self.reference[n]
+            return ''
+
+        print('Word to correct:', hyp[trg])
+
+        if (segments != [] and trg < segments[0][0]
+                and self.reference_in_segment[0] == 0):
+            session.mergeSegments(-1, 0)
+            return 'Ò.Ó'
+
+        # Word to correct is the first word of the hypothesis.
+        if trg == 0:
+            self.reference_in_segment[0] = 0
+            for n in range(1, self.reference_size):
+                if self.reference_in_segment[n] is not None:
+                    self.reference_in_segment[n] += 1
+            session.wordCorrection(trg, self.reference[0])
+            return self.reference[0]
+
+        # Word to correct is the last word of the hypothesis.
+        if trg == len(hyp) - 1:
+            # Check if the reference's last word is already in the hypothesis.
+            if self.reference_in_segment[-1] is None:
+                session.wordCorrection(trg, self.reference[-1])
+                self.reference_in_segment[-1] = len(segments) - 1
+                return self.reference[-1]
+            # If it is, input an end of sentence.
+            else:
+                session.endOfSentence()
+                return '#'
+                session.wordCorrection(trg, '')
+                return ''
+
+        # Target position in segments.
+        target_in_segments = [None for tr in hyp]
+        for n in range(len(segments)):
+            for tr in segments[n]:
+                target_in_segments[tr] = n
+
+        # Word to correct is at the beginning of a segment.
+        if target_in_segments[trg + 1] is not None:
+            segment = target_in_segments[trg + 1]
+            ref = -1
+            for n in range(1, self.reference_size):
+                if self.reference_in_segment[n] == segment:
+                    ref = n - 1
+                    break
+            if ref != -1 and self.reference_in_segment[ref] is not None:
+                session.mergeSegments(self.reference_in_segment[ref],
+                                      self.reference_in_segment[ref] + 1)
+                for rf in range(self.reference_size):
+                    if (self.reference_in_segment[rf] is not None
+                        and self.reference_in_segment[
+                            rf] > self.reference_in_segment[ref]):
+                        self.reference_in_segment[rf] -= 1
+                return 'Ò.Ó'
+            # There may not be any reference in the segment,
+            # in which case we don't know the correction. The
+            # same happens if the reference is in another segment.
+            if ref == -1 or self.reference_in_segment[ref] is not None:
+                session.endOfSentence()
+                return '#'
+            self.reference_in_segment[ref] = segment
+            for n in range(ref + 1, self.reference_size):
+                if self.reference_in_segment[n] is not None:
+                    self.reference_in_segment[n] += 1
+            session.wordCorrection(trg, self.reference[ref])
+            return self.reference[ref]
+
+        # Word to correct is at the end of a segment.
+        if target_in_segments[trg - 1] is not None:
+            segment = target_in_segments[trg - 1]
+            ref = -1
+            for n in range(self.reference_size - 1):
+                if self.reference_in_segment[n] == segment:
+                    ref = n + 1
+            if ref != -1 and self.reference_in_segment[ref] is not None:
+                session.mergeSegments(self.reference_in_segment[ref] - 1,
+                                      self.reference_in_segment[ref])
+                for rf in range(self.reference_size):
+                    if (self.reference_in_segment[rf] is not None
+                        and self.reference_in_segment[
+                            rf] >= self.reference_in_segment[ref]):
+                        self.reference_in_segment[rf] -= 1
+                return 'Ò.Ó'
+            # There may not be any reference in the segment,
+            # in which case we don't know the correction. The
+            # same happens if the reference is in another segment.
+            if ref == -1 or self.reference_in_segment[ref] is not None:
+                session.endOfSentence()
+                return '#'
+            self.reference_in_segment[ref] = segment + 1
+            for n in range(ref + 1, self.reference_size):
+                if self.reference_in_segment[n] is not None:
+                    self.reference_in_segment[n] += 1
+            session.wordCorrection(trg, self.reference[ref])
+            return self.reference[ref]
 
         # Otherwise, there's no correction to be made.
         return ''
