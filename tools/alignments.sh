@@ -32,7 +32,7 @@ while getopts ":s:t:o:m:b" opt; do
 	\? )
 	    >&2 echo "Usage: $0 -s src_file -t tgt_file -o output_file -m mgiza_bin {options}"
 	    >&2 echo "options:"
-	    >&2 echo "     -b: Use IBM Model 1. (Default: Use HMM.)"
+	    >&2 echo "     -b: use IBM Model 1. (Default: use HMM.)"
 	    exit 1
 	    ;;
     esac
@@ -41,7 +41,7 @@ done
 if [[ ${src} == '' || ${tgt} == '' || ${output} == '' || ${mgiza} == '' ]];then
   >&2 echo "Usage: $0 -s src_file -t tgt_file -o output_file -m mgiza_bin {options}"
   >&2 echo "options:"
-  >&2 echo "     -b: Use IBM Model 1. (Default: Use HMM.)"
+  >&2 echo "     -b: use IBM Model 1. (Default: use HMM.)"
   exit 1
 fi
 
