@@ -49,6 +49,10 @@ if __name__ == "__main__":
     # Check arguments.
     args = parse_args()
 
+    # Force verbose mode if show-xml is active.
+    if args.xml:
+        args.verbose = True
+
     # Session set-up.
     sys.stderr.write("\x1b[2J\x1b[H")
     sys.stderr.write('Preparing systems  (it may take a while)...\n')
@@ -128,7 +132,7 @@ if __name__ == "__main__":
                 print('WORD SEGMENTS:', session.getWordSegments())
                 print('DELETED WORDS:', session.getDeletedWords())
                 print('')
-                if args.XML:
+                if args.xml:
                     print('XML:', session.getXML())
 
         if args.verbose:
