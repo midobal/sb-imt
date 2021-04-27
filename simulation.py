@@ -37,6 +37,9 @@ def parse_args():
                         required=False, default='/opt/moses/bin/moses',
                         help='Path to moses bin. (Default: \
                         /opt/moses/bin/moses.)')
+    parser.add_argument('-l', '--log', metavar='log_file', required=True,
+                        type=argparse.FileType('w', encoding='utf-8'),
+                        help='File to store log. (Default: stdout.)')
 
     return parser.parse_args()
 
@@ -84,8 +87,8 @@ if __name__ == "__main__":
         validated_translation = False
 
         if args.verbose:
-            print('SOURCE: ' + source.strip())
-            print('REFERENCE: ' + ' '.join(reference))
+            print('SOURCE: ' + source.strip(), file=args.log)
+            print('REFERENCE: ' + ' '.join(reference), file=args.log)
 
         # Iterative process.
         while not validated_translation:
@@ -94,7 +97,7 @@ if __name__ == "__main__":
             session.newHypothesis()
 
             if args.verbose:
-                print('TRANSLATION:', session.getTranslation())
+                print('TRANSLATION:', session.getTranslation(), file=args.log)
 
             # Check if new hypothesis is the desired translation.
             if session.getTranslation() == ' '.join(reference):
@@ -114,36 +117,40 @@ if __name__ == "__main__":
             if new_word == '':
                 session.validateTranslation()
                 if args.verbose:
-                    print('')
-                    print('')
-                    print('CORRECTED WORD: ')
-                    print('WORD SEGMENTS:', session.getWordSegments())
-                    print('DELETED WORDS:', session.getDeletedWords())
-                    print('')
+                    print('', file=args.log)
+                    print('', file=args.log)
+                    print('CORRECTED WORD: ', file=args.log)
+                    print('WORD SEGMENTS:', session.getWordSegments(),
+                          file=args.log)
+                    print('DELETED WORDS:', session.getDeletedWords(),
+                          file=args.log)
+                    print('', file=args.log)
                 break
 
             # XML Generation.
             session.generateXML()
 
             if args.verbose:
-                print('')
-                print('')
-                print('CORRECTED WORD:',  new_word)
-                print('WORD SEGMENTS:', session.getWordSegments())
-                print('DELETED WORDS:', session.getDeletedWords())
-                print('')
+                print('', file=args.log)
+                print('', file=args.log)
+                print('CORRECTED WORD:',  new_word, file=args.log)
+                print('WORD SEGMENTS:', session.getWordSegments(),
+                      file=args.log)
+                print('DELETED WORDS:', session.getDeletedWords(),
+                      file=args.log)
+                print('', file=args.log)
                 if args.xml:
-                    print('XML:', session.getXML())
+                    print('XML:', session.getXML(), file=args.log)
 
         if args.verbose:
-            print('')
-            print('Word Strokes: ', session.getWordStrokes())
-            print('Mouse Actions:', session.getMouseActions())
+            print('', file=args.log)
+            print('Word Strokes: ', session.getWordStrokes(), file=args.log)
+            print('Mouse Actions:', session.getMouseActions(), file=args.log)
 
-            print("-----------------------------------------")
-            print('')
+            print("-----------------------------------------", file=args.log)
+            print('', file=args.log)
 
     # Show metrics.
-    print('WSR:', "{0:.1f}".format(session.getWSR()))
-    print('MAR:', "{0:.1f}".format(session.getMAR()))
-    print('WDR:', "{0:.1f}".format(session.getWDR()))
+    print('WSR:', "{0:.1f}".format(session.getWSR()), file=args.log)
+    print('MAR:', "{0:.1f}".format(session.getMAR()), file=args.log)
+    print('WDR:', "{0:.1f}".format(session.getWDR()), file=args.log)
