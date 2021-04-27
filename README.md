@@ -40,7 +40,7 @@ optional arguments:
   -m moses_bin, --moses moses_bin
                         Path to moses bin. (Default: /opt/moses/bin/moses.)
   -l log_file, --log log_file
-                        File to store log. (Default: stdout.)
+                        File to store the log.
 ```
 
 ## Run through Docker

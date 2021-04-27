@@ -39,7 +39,7 @@ def parse_args():
                         /opt/moses/bin/moses.)')
     parser.add_argument('-l', '--log', metavar='log_file', required=True,
                         type=argparse.FileType('w', encoding='utf-8'),
-                        help='File to store log. (Default: stdout.)')
+                        help='File to store the log.')
 
     return parser.parse_args()
 
